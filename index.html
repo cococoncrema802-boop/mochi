@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MOCHI ✧ VTuber &amp; Creator</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Fuentes Google: Cinzel Decorative (título angelical) y Plus Jakarta Sans (lectura nítida) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --glare-x: 50%;
+      --glare-y: 50%;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      color: #334155;
+      overflow-x: hidden;
+      /* Fondo monocromático nacarado, plata y cristal suave estilo Angelcore Anime */
+      background:
+        radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.98) 0%, rgba(241, 245, 249, 0.92) 38%, rgba(203, 213, 225, 0.88) 78%, rgba(148, 163, 184, 0.92) 100%);
+      background-attachment: fixed;
+    }
+
+    /* Rejilla celestial y haces de luz suaves */
+    .celestial-backdrop {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background-image:
+        linear-gradient(to right, rgba(255, 255, 255, 0.36) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.36) 1px, transparent 1px),
+        conic-gradient(from 180deg at 50% -12%, transparent 41%, rgba(255, 255, 255, 0.72) 48%, transparent 54%, rgba(255, 255, 255, 0.55) 59%, transparent 66%);
+      background-size: 54px 54px, 54px 54px, 100% 100%;
+    }
+
+    /* Canvas de plumas flotantes y estela del mouse (60 FPS GPU) */
+    #angel-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .font-angel {
+      font-family: 'Cinzel Decorative', serif;
+    }
+
+    /* Título MOCHI con resplandor nacarado */
+    .mochi-title {
+      letter-spacing: 0.16em;
+      color: #334155;
+      text-shadow:
+        0 2px 10px rgba(255, 255, 255, 1),
+        0 0 26px rgba(224, 242, 254, 0.95),
+        0 4px 16px rgba(100, 116, 139, 0.22);
+    }
+
+    /* Escenario con perspectiva para el efecto Tilt 3D */
+    .card-stage {
+      perspective: 1100px;
+    }
+
+    /* Tarjeta principal cristalina nacarada */
+    .angel-card {
+      position: relative;
+      background: linear-gradient(165deg, rgba(255, 255, 255, 0.90) 0%, rgba(248, 250, 252, 0.80) 52%, rgba(241, 245, 249, 0.88) 100%);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1.5px solid rgba(255, 255, 255, 0.98);
+      box-shadow:
+        0 26px 65px -15px rgba(71, 85, 105, 0.25),
+        0 0 44px rgba(255, 255, 255, 0.95),
+        inset 0 0 24px rgba(255, 255, 255, 0.95);
+      will-change: transform;
+      transform-style: preserve-3d;
+    }
+
+    /* Brillo nacarado que sigue el cursor sobre la tarjeta */
+    .card-glare {
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      pointer-events: none;
+      background: radial-gradient(
+        390px circle at var(--glare-x) var(--glare-y),
+        rgba(255, 255, 255, 0.85),
+        rgba(224, 242, 254, 0.30) 38%,
+        transparent 72%
+      );
+      opacity: 0;
+      transition: opacity 0.35s ease;
+      z-index: 3;
+    }
+
+    .angel-card:hover .card-glare {
+      opacity: 1;
+    }
+
+    /* Costura interior tipo encaje angelical */
+    .lace-frame {
+      position: absolute;
+      inset: 7px;
+      border-radius: 22px;
+      border: 1px dashed rgba(148, 163, 184, 0.42);
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    /* =======================================================================
+       ALAS SIMÉTRICAS EN AMBOS LADOS (ajustadas a top: 3.2rem sin avatar)
+       .wing-right aplica únicamente scaleX(-1) en el contenedor externo,
+       mientras .wing-flap ejecuta la animación @keyframes sin sobrescribirlo.
+       ======================================================================= */
+    .wing-wrapper {
+      position: absolute;
+      top: 3.2rem;
+      width: 6.8rem;
+      pointer-events: none;
+      z-index: 1;
+      filter: drop-shadow(0 10px 22px rgba(100, 116, 139, 0.26)) drop-shadow(0 0 14px rgba(255, 255, 255, 0.95));
+    }
+
+    .wing-left {
+      left: -3.6rem;
+    }
+
+    .wing-right {
+      right: -3.6rem;
+      transform: scaleX(-1);
+    }
+
+    @media (min-width: 640px) {
+      .wing-wrapper {
+        top: 3.2rem;
+        width: 11.5rem;
+      }
+      .wing-left {
+        left: -7.8rem;
+      }
+      .wing-right {
+        right: -7.8rem;
+      }
+    }
+
+    @media (min-width: 768px) {
+      .wing-wrapper {
+        top: 3.2rem;
+        width: 13.5rem;
+      }
+      .wing-left {
+        left: -9.6rem;
+      }
+      .wing-right {
+        right: -9.6rem;
+      }
+    }
+
+    /* Elemento interno animado (anclado en la raíz del ala junto a la tarjeta) */
+    .wing-flap {
+      width: 100%;
+      height: auto;
+      transform-origin: 94% 44%;
+      animation: wingFlapMotion 6.2s ease-in-out infinite;
+      will-change: transform;
+    }
+
+    @keyframes wingFlapMotion {
+      0%, 100% {
+        transform: rotate(0deg) translateY(0px);
+      }
+      50% {
+        transform: rotate(4.5deg) translateY(-6px);
+      }
+    }
+
+    /* Animación flotante del Halo superior */
+    @keyframes floatHalo {
+      0%, 100% {
+        transform: translateY(0px) scale(1);
+        opacity: 0.94;
+      }
+      50% {
+        transform: translateY(-6px) scale(1.03);
+        opacity: 1;
+      }
+    }
+
+    .halo-anim {
+      animation: floatHalo 4.8s ease-in-out infinite;
+      will-change: transform, opacity;
+    }
+
+    /* Caja de biografía nacarada */
+    .bio-box {
+      position: relative;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.86), rgba(241, 245, 249, 0.72));
+      border: 1px solid rgba(226, 232, 240, 0.96);
+      border-left: 3.5px solid #94a3b8;
+      box-shadow:
+        inset 4px 0 14px -4px rgba(186, 230, 253, 0.65),
+        0 6px 18px -6px rgba(100, 116, 139, 0.10);
+    }
+
+    /* Botones de redes sociales con Spotlight al mover el mouse */
+    .social-btn {
+      position: relative;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.76);
+      border: 1px solid rgba(203, 213, 225, 0.88);
+      box-shadow:
+        0 4px 14px rgba(148, 163, 184, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.98);
+      transition:
+        transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+        border-color 0.25s ease,
+        box-shadow 0.25s ease,
+        background-color 0.25s ease;
+      --btn-x: 50%;
+      --btn-y: 50%;
+    }
+
+    .social-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(
+        190px circle at var(--btn-x) var(--btn-y),
+        rgba(255, 255, 255, 0.98),
+        rgba(224, 242, 254, 0.48) 45%,
+        transparent 75%
+      );
+      opacity: 0;
+      transition: opacity 0.25s ease;
+      pointer-events: none;
+    }
+
+    .social-btn:hover {
+      transform: translateY(-2.5px) scale(1.01);
+      background: rgba(255, 255, 255, 0.94);
+      border-color: rgba(148, 163, 184, 0.95);
+      box-shadow:
+        0 10px 24px -6px rgba(100, 116, 139, 0.22),
+        0 0 20px rgba(224, 242, 254, 0.95);
+    }
+
+    .social-btn:hover::before {
+      opacity: 1;
+    }
+
+    .social-btn:active {
+      transform: translateY(0px) scale(0.99);
+    }
+  </style>
+</head>
+<body class="relative flex min-h-screen flex-col items-center justify-center px-10 py-10 sm:px-16 select-none">
+
+  <!-- Fondo cristalino con luz celestial -->
+  <div class="celestial-backdrop" aria-hidden="true"></div>
+
+  <!-- Ramas plateadas delicadas en las esquinas -->
+  <svg class="fixed top-0 left-0 w-60 sm:w-96 h-auto opacity-30 pointer-events-none z-0 text-slate-500" viewBox="0 0 400 300" fill="none" aria-hidden="true">
+    <path d="M-10,10 Q90,65 180,45 T340,95 M60,42 Q115,115 170,165 M125,52 Q165,20 235,12 M95,95 Q55,150 20,210" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    <path d="M0,75 Q75,110 145,140 T260,210" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-dasharray="3 5"/>
+    <circle cx="185" cy="48" r="3" fill="white"/>
+    <circle cx="260" cy="210" r="2.5" fill="white"/>
+  </svg>
+
+  <svg class="fixed bottom-0 right-0 w-60 sm:w-96 h-auto opacity-25 pointer-events-none z-0 text-slate-500 rotate-180" viewBox="0 0 400 300" fill="none" aria-hidden="true">
+    <path d="M-10,10 Q90,65 180,45 T340,95 M60,42 Q115,115 170,165 M125,52 Q165,20 235,12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    <circle cx="185" cy="48" r="3" fill="white"/>
+  </svg>
+
+  <!-- Canvas de Plumas Lentas y Destellos del Cursor -->
+  <canvas id="angel-canvas" aria-hidden="true"></canvas>
+
+  <!-- Botón Superior de Sonido Angelical ON / OFF -->
+  <div class="fixed top-4 right-4 z-30">
+    <button
+      id="sound-toggle"
+      type="button"
+      aria-label="Activar o desactivar sonido angelical"
+      class="flex items-center gap-2 rounded-full bg-white/85 hover:bg-white px-4 py-2 text-xs font-semibold text-slate-600 shadow-sm border border-white backdrop-blur-md transition-all active:scale-95 cursor-pointer"
+    >
+      <span id="sound-icon" class="text-sky-400 text-sm">✧</span>
+      <span id="sound-label">Sonido: ON</span>
+    </button>
+  </div>
+
+  <!-- Contenedor Central -->
+  <main class="relative z-10 flex w-full max-w-[420px] items-center justify-center py-4">
+
+    <div class="card-stage relative w-full flex flex-col items-center">
+
+      <!-- Halo Luminoso Superior -->
+      <div class="halo-anim pointer-events-none mb-[-14px] z-20 flex flex-col items-center" aria-hidden="true">
+        <svg class="w-44 sm:w-48 h-12 drop-shadow-[0_0_14px_rgba(255,255,255,1)]" viewBox="0 0 220 56" fill="none">
+          <defs>
+            <linearGradient id="haloGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#cbd5e1" stop-opacity="0.3" />
+              <stop offset="25%" stop-color="#ffffff" stop-opacity="1" />
+              <stop offset="50%" stop-color="#e0f2fe" stop-opacity="1" />
+              <stop offset="75%" stop-color="#ffffff" stop-opacity="1" />
+              <stop offset="100%" stop-color="#cbd5e1" stop-opacity="0.3" />
+            </linearGradient>
+          </defs>
+          <ellipse cx="110" cy="28" rx="82" ry="13" stroke="url(#haloGrad)" stroke-width="4.5" />
+          <ellipse cx="110" cy="28" rx="92" ry="17" stroke="#ffffff" stroke-width="1.2" stroke-dasharray="4 6" opacity="0.9" />
+          <path d="M110 4 L112.2 12.8 L121 15 L112.2 17.2 L110 26 L107.8 17.2 L99 15 L107.8 12.8 Z" fill="#ffffff" />
+        </svg>
+      </div>
+
+      <!-- ALA IZQUIERDA -->
+      <div class="wing-wrapper wing-left" aria-hidden="true">
+        <div class="wing-flap">
+          <svg viewBox="0 0 220 300" class="w-full h-auto" fill="none">
+            <defs>
+              <linearGradient id="wingPearlL" x1="0%" y1="0%" x2="100%" y2="85%">
+                <stop offset="0%" stop-color="#ffffff" />
+                <stop offset="65%" stop-color="#f8fafc" />
+                <stop offset="100%" stop-color="#e2e8f0" />
+              </linearGradient>
+            </defs>
+            <!-- Plumas primarias largas -->
+            <path d="M212 122 C164 48, 78 12, 8 24 C28 58, 62 78, 108 92 C48 80, 16 96, 4 118 C34 134, 78 138, 124 134 C64 142, 26 162, 14 190 C52 192, 96 180, 138 164 C90 190, 56 218, 48 248 C92 238, 140 206, 178 170 C142 206, 118 238, 116 268 C154 252, 188 214, 212 168 Z"
+                  fill="url(#wingPearlL)" stroke="#cbd5e1" stroke-width="1.8" stroke-linejoin="round" />
+            <!-- Segunda capa interior de plumas nacaradas -->
+            <path d="M212 128 C176 78, 116 54, 62 60 C86 82, 114 96, 148 104 C102 102, 68 114, 54 132 C86 140, 122 140, 158 136 C116 148, 86 166, 78 188 C114 186, 150 172, 182 154 C150 180, 130 204, 128 224 C162 210, 192 182, 212 154 Z"
+                  fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5" stroke-linejoin="round" />
+            <!-- Detalles suaves de cálamo -->
+            <path d="M198 122 C154 78, 96 52, 38 44 M192 136 C146 116, 94 112, 42 118 M188 150 C144 152, 102 164, 56 180"
+                  stroke="#cbd5e1" stroke-width="1.3" stroke-linecap="round" opacity="0.75" />
+          </svg>
+        </div>
+      </div>
+
+      <!-- ALA DERECHA (Espejo exacto: .wing-right tiene scaleX(-1) y .wing-flap anima adentro) -->
+      <div class="wing-wrapper wing-right" aria-hidden="true">
+        <div class="wing-flap">
+          <svg viewBox="0 0 220 300" class="w-full h-auto" fill="none">
+            <defs>
+              <linearGradient id="wingPearlR" x1="0%" y1="0%" x2="100%" y2="85%">
+                <stop offset="0%" stop-color="#ffffff" />
+                <stop offset="65%" stop-color="#f8fafc" />
+                <stop offset="100%" stop-color="#e2e8f0" />
+              </linearGradient>
+            </defs>
+            <!-- Plumas primarias largas -->
+            <path d="M212 122 C164 48, 78 12, 8 24 C28 58, 62 78, 108 92 C48 80, 16 96, 4 118 C34 134, 78 138, 124 134 C64 142, 26 162, 14 190 C52 192, 96 180, 138 164 C90 190, 56 218, 48 248 C92 238, 140 206, 178 170 C142 206, 118 238, 116 268 C154 252, 188 214, 212 168 Z"
+                  fill="url(#wingPearlR)" stroke="#cbd5e1" stroke-width="1.8" stroke-linejoin="round" />
+            <!-- Segunda capa interior de plumas nacaradas -->
+            <path d="M212 128 C176 78, 116 54, 62 60 C86 82, 114 96, 148 104 C102 102, 68 114, 54 132 C86 140, 122 140, 158 136 C116 148, 86 166, 78 188 C114 186, 150 172, 182 154 C150 180, 130 204, 128 224 C162 210, 192 182, 212 154 Z"
+                  fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5" stroke-linejoin="round" />
+            <!-- Detalles suaves de cálamo -->
+            <path d="M198 122 C154 78, 96 52, 38 44 M192 136 C146 116, 94 112, 42 118 M188 150 C144 152, 102 164, 56 180"
+                  stroke="#cbd5e1" stroke-width="1.3" stroke-linecap="round" opacity="0.75" />
+          </svg>
+        </div>
+      </div>
+
+      <!-- TARJETA CENTRAL (Sin marco ni foto de perfil) -->
+      <section
+        id="angel-card"
+        aria-label="Tarjeta de redes sociales de Mochi"
+        class="angel-card relative z-10 w-full rounded-[28px] px-5 py-7 sm:px-8 sm:py-8 flex flex-col items-center"
+      >
+        <!-- Brillo nacarado que sigue el mouse -->
+        <div class="card-glare" aria-hidden="true"></div>
+
+        <!-- Borde interior de encaje -->
+        <div class="lace-frame" aria-hidden="true"></div>
+
+        <!-- Ornamentos en las 4 esquinas -->
+        <svg class="pointer-events-none absolute top-3 left-3 w-7 h-7 text-slate-300" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+          <path d="M2 22 V6 A4 4 0 0 1 6 2 H22" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          <circle cx="6" cy="6" r="2" fill="currentColor"/>
+        </svg>
+        <svg class="pointer-events-none absolute top-3 right-3 w-7 h-7 text-slate-300 scale-x-[-1]" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+          <path d="M2 22 V6 A4 4 0 0 1 6 2 H22" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          <circle cx="6" cy="6" r="2" fill="currentColor"/>
+        </svg>
+        <svg class="pointer-events-none absolute bottom-3 left-3 w-7 h-7 text-slate-300 scale-y-[-1]" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+          <path d="M2 22 V6 A4 4 0 0 1 6 2 H22" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          <circle cx="6" cy="6" r="2" fill="currentColor"/>
+        </svg>
+        <svg class="pointer-events-none absolute bottom-3 right-3 w-7 h-7 text-slate-300 scale-[-1]" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+          <path d="M2 22 V6 A4 4 0 0 1 6 2 H22" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          <circle cx="6" cy="6" r="2" fill="currentColor"/>
+        </svg>
+
+        <!-- 1. Etiqueta Superior (Badge) -->
+        <div class="relative z-10 inline-flex items-center gap-1.5 rounded-full bg-white/95 px-4 py-1.5 text-[11px] sm:text-xs font-semibold tracking-[0.14em] text-slate-500 border border-slate-200/90 shadow-sm mb-3.5">
+          <span>✧ VTUBER &amp; CREATOR ✧</span>
+        </div>
+
+        <!-- 2. Título Principal directo debajo de la etiqueta -->
+        <h1 class="mochi-title font-angel relative z-10 text-3xl sm:text-4xl font-bold text-center mb-1 select-text">
+          MOCHI
+        </h1>
+
+        <!-- 3. Usuario debajo del nombre -->
+        <p class="relative z-10 text-xs sm:text-[13px] font-semibold tracking-[0.12em] text-slate-400 mb-5 flex items-center gap-1.5 select-text">
+          <span class="inline-block w-1.5 h-1.5 rounded-full bg-sky-300 animate-pulse"></span>
+          <span>@mochiiimochii00</span>
+        </p>
+
+        <!-- 4. Descripción / Biografía -->
+        <div class="bio-box relative z-10 w-full rounded-2xl p-4 sm:p-5 mb-6 text-center sm:text-left">
+          <p class="text-[13.5px] sm:text-sm leading-relaxed text-slate-600 select-text">
+            Hola! Soy Mochi , tu VTuber de confort. Mi canal es un rincón libre de estrés donde venimos a tomar té, jugar titulos variados y platicar de chill,<span class="font-semibold text-slate-800"> ponte comodo</span> y disfruta.
+          </p>
+        </div>
+
+        <!-- 5. Botones de Redes Sociales -->
+        <nav aria-label="Redes sociales de Mochi" class="relative z-10 w-full flex flex-col gap-3">
+
+          <!-- TIKTOK -->
+          <a
+            href="https://www.tiktok.com/@mochiiimochii00"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="social-btn group flex w-full items-center justify-between rounded-2xl px-5 py-3.5 text-sm font-bold tracking-[0.14em] text-slate-700"
+          >
+            <span class="relative z-10 flex items-center gap-2.5 group-hover:text-slate-900 transition-colors">
+              <span>TIKTOK</span>
+              <span class="text-[10px] font-medium tracking-normal text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity">✧ lives 8 PM</span>
+            </span>
+            <svg class="relative z-10 w-5 h-5 text-slate-500 group-hover:text-slate-800 group-hover:scale-110 transition-all" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+            </svg>
+          </a>
+
+          <!-- TWITCH -->
+          <a
+            href="https://www.twitch.tv/mochiimochii00"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="social-btn group flex w-full items-center justify-between rounded-2xl px-5 py-3.5 text-sm font-bold tracking-[0.14em] text-slate-700"
+          >
+            <span class="relative z-10 flex items-center gap-2.5 group-hover:text-slate-900 transition-colors">
+              <span>TWITCH</span>
+              <span class="text-[10px] font-medium tracking-normal text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity">✧ streams</span>
+            </span>
+            <svg class="relative z-10 w-5 h-5 text-slate-500 group-hover:text-slate-800 group-hover:scale-110 transition-all" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z"/>
+            </svg>
+          </a>
+
+          <!-- INSTAGRAM -->
+          <a
+            href="https://www.instagram.com/mochiimochi00?exln=eXJ3cGJvaWVpNHV0&utm_source=qr"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="social-btn group flex w-full items-center justify-between rounded-2xl px-5 py-3.5 text-sm font-bold tracking-[0.14em] text-slate-700"
+          >
+            <span class="relative z-10 flex items-center gap-2.5 group-hover:text-slate-900 transition-colors">
+              <span>INSTAGRAM</span>
+              <span class="text-[10px] font-medium tracking-normal text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity">✧ fotos</span>
+            </span>
+            <svg class="relative z-10 w-5 h-5 text-slate-500 group-hover:text-slate-800 group-hover:scale-110 transition-all" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/>
+              <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+              <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
+            </svg>
+          </a>
+
+          <!-- YOUTUBE -->
+          <a
+            href="https://youtube.com/@mochiimochii00?si=VgO05mUPnUyHKMsl"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="social-btn group flex w-full items-center justify-between rounded-2xl px-5 py-3.5 text-sm font-bold tracking-[0.14em] text-slate-700"
+          >
+            <span class="relative z-10 flex items-center gap-2.5 group-hover:text-slate-900 transition-colors">
+              <span>YOUTUBE</span>
+              <span class="text-[10px] font-medium tracking-normal text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity">✧ canal</span>
+            </span>
+            <svg class="relative z-10 w-5 h-5 text-slate-500 group-hover:text-slate-800 group-hover:scale-110 transition-all" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+            </svg>
+          </a>
+
+          <!-- DISCORD -->
+          <a
+            href="https://discord.gg/HxwdQQwrh"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="social-btn group flex w-full items-center justify-between rounded-2xl px-5 py-3.5 text-sm font-bold tracking-[0.14em] text-slate-700"
+          >
+            <span class="relative z-10 flex items-center gap-2.5 group-hover:text-slate-900 transition-colors">
+              <span>DISCORD</span>
+              <span class="text-[10px] font-medium tracking-normal text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity">✧ servidor</span>
+            </span>
+            <svg class="relative z-10 w-5 h-5 text-slate-500 group-hover:text-slate-800 group-hover:scale-110 transition-all" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.028zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+            </svg>
+          </a>
+
+        </nav>
+
+        <!-- 6. Footer de la Tarjeta -->
+        <footer class="relative z-10 mt-6 pt-3.5 border-t border-slate-200/80 w-full flex items-center justify-center text-xs font-medium tracking-wider text-slate-500">
+          <span>✧ Diviértete en mis lives ✧</span>
+        </footer>
+      </section>
+    </div>
+
+  </main>
+
+  <!-- Mensaje flotante elegante al copiar Discord -->
+  <div
+    id="toast"
+    role="status"
+    aria-live="polite"
+    class="fixed bottom-6 left-1/2 -translate-x-1/2 translate-y-16 opacity-0 pointer-events-none z-50 flex items-center gap-2.5 rounded-full bg-white/95 px-5 py-3 text-xs sm:text-sm font-semibold text-slate-700 shadow-[0_12px_32px_rgba(71,85,105,0.22)] border border-slate-200 backdrop-blur-md transition-all duration-300"
+  >
+    <span class="text-sky-400 text-base">✧</span>
+    <span id="toast-message">¡Usuario de Discord copiado!</span>
+  </div>
+
+  <script>
+    window.addEventListener('load', function () {
+      /* =====================================================================
+       * 1. SONIDOS DE ARPA / CAMPANITA ANGELICAL (Integrados con Web Audio API)
+       *    No requiere archivos .mp3 externos; nunca fallan ni pesan.
+       * ===================================================================== */
+      let soundEnabled = true;
+      let audioCtx = null;
+
+      function ensureAudioContext() {
+        if (!soundEnabled) return null;
+        try {
+          if (!audioCtx) {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (!AudioCtx) return null;
+            audioCtx = new AudioCtx();
+          }
+          if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+          }
+          return audioCtx;
+        } catch (err) {
+          return null;
+        }
+      }
+
+      // Desbloquea el audio del navegador en el primer toque o clic en la página
+      window.addEventListener('pointerdown', () => {
+        if (soundEnabled) ensureAudioContext();
+      }, { once: true, passive: true });
+
+      // Nota suave de campanita/arpa al pasar el mouse (hover)
+      function playHoverBell(baseFreq) {
+        const ctxAudio = ensureAudioContext();
+        if (!ctxAudio || ctxAudio.state !== 'running') return;
+
+        const now = ctxAudio.currentTime;
+        const osc1 = ctxAudio.createOscillator();
+        const osc2 = ctxAudio.createOscillator();
+        const gain = ctxAudio.createGain();
+
+        osc1.type = 'sine';
+        osc2.type = 'triangle';
+
+        osc1.frequency.setValueAtTime(baseFreq, now);
+        osc2.frequency.setValueAtTime(baseFreq * 2, now); // Armónico cristalino
+
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.linearRampToValueAtTime(0.032, now + 0.018);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.42);
+
+        osc1.connect(gain);
+        osc2.connect(gain);
+        gain.connect(ctxAudio.destination);
+
+        osc1.start(now);
+        osc2.start(now);
+        osc1.stop(now + 0.44);
+        osc2.stop(now + 0.44);
+      }
+
+      // Pequeño arpegio celestial al hacer clic
+      function playClickArpeggio() {
+        const ctxAudio = ensureAudioContext();
+        if (!ctxAudio) return;
+
+        const notes = [1046.50, 1318.51, 1567.98]; // Do6 - Mi6 - Sol6
+        notes.forEach((freq, index) => {
+          const start = ctxAudio.currentTime + index * 0.055;
+          const osc = ctxAudio.createOscillator();
+          const gain = ctxAudio.createGain();
+
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, start);
+
+          gain.gain.setValueAtTime(0.0001, start);
+          gain.gain.linearRampToValueAtTime(0.04, start + 0.015);
+          gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.48);
+
+          osc.connect(gain);
+          gain.connect(ctxAudio.destination);
+
+          osc.start(start);
+          osc.stop(start + 0.5);
+        });
+      }
+
+      const soundToggleBtn = document.getElementById('sound-toggle');
+      const soundLabel = document.getElementById('sound-label');
+      const soundIcon = document.getElementById('sound-icon');
+
+      soundToggleBtn.addEventListener('click', () => {
+        soundEnabled = !soundEnabled;
+        soundLabel.textContent = soundEnabled ? 'Sonido: ON' : 'Sonido: OFF';
+        soundIcon.textContent = soundEnabled ? '✧' : '◦';
+        if (soundEnabled) {
+          playClickArpeggio();
+        }
+      });
+
+      /* =====================================================================
+       * 2. BOTÓN DISCORD Y NOTIFICACIÓN TOAST (Lógica de copiado eliminada)
+       * ===================================================================== */
+      const toastEl = document.getElementById('toast');
+      const toastMsg = document.getElementById('toast-message');
+      let toastTimer = null;
+
+      function showToast(message) {
+        toastMsg.textContent = message;
+        toastEl.classList.remove('translate-y-16', 'opacity-0');
+        toastEl.classList.add('translate-y-0', 'opacity-100');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => {
+          toastEl.classList.add('translate-y-16', 'opacity-0');
+          toastEl.classList.remove('translate-y-0', 'opacity-100');
+        }, 2800);
+      }
+
+      function copyToClipboard(text) {
+        const temp = document.createElement('textarea');
+        temp.value = text;
+        temp.setAttribute('readonly', '');
+        temp.style.position = 'fixed';
+        temp.style.opacity = '0';
+        document.body.appendChild(temp);
+        temp.select();
+        try {
+          document.execCommand('copy');
+        } catch (err) {
+          // Silencioso
+        }
+        document.body.removeChild(temp);
+      }
+
+      /* =====================================================================
+       * 3. SPOTLIGHT EN BOTONES Y SONIDO AL HOVER / CLIC
+       * ===================================================================== */
+      const harpScale = [987.77, 1046.50, 1174.66, 1318.51, 1567.98]; // Escala angelical de 5 notas para los 5 botones
+      const socialButtons = document.querySelectorAll('.social-btn');
+
+      socialButtons.forEach((btn, idx) => {
+        btn.addEventListener('pointermove', (e) => {
+          const rect = btn.getBoundingClientRect();
+          btn.style.setProperty('--btn-x', `${e.clientX - rect.left}px`);
+          btn.style.setProperty('--btn-y', `${e.clientY - rect.top}px`);
+        });
+
+        btn.addEventListener('pointerenter', () => {
+          playHoverBell(harpScale[idx % harpScale.length]);
+        });
+
+        if (btn.tagName === 'A') {
+          btn.addEventListener('click', () => {
+            playClickArpeggio();
+          });
+        }
+      });
+
+      /* =====================================================================
+       * 4. TILT 3D SUAVE CON REFLEJO NACARADO (card-glare)
+       * ===================================================================== */
+      const card = document.getElementById('angel-card');
+      const isFinePointer = window.matchMedia('(pointer: fine)').matches;
+
+      let targetRotX = 0;
+      let targetRotY = 0;
+      let currentRotX = 0;
+      let currentRotY = 0;
+      let isHoveringCard = false;
+
+      if (isFinePointer && card) {
+        card.addEventListener('mousemove', (e) => {
+          const rect = card.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          const y = e.clientY - rect.top;
+          const centerX = rect.width * 0.5;
+          const centerY = rect.height * 0.5;
+
+          targetRotY = ((x - centerX) / centerX) * 5.2;
+          targetRotX = -((y - centerY) / centerY) * 5.2;
+          isHoveringCard = true;
+
+          card.style.setProperty('--glare-x', `${(x / rect.width) * 100}%`);
+          card.style.setProperty('--glare-y', `${(y / rect.height) * 100}%`);
+        });
+
+        card.addEventListener('mouseleave', () => {
+          isHoveringCard = false;
+          targetRotX = 0;
+          targetRotY = 0;
+        });
+      }
+
+      /* =====================================================================
+       * 5. CANVAS DE PLUMAS ULTRA LENTAS Y FLUIDAS (60 FPS SIN TRABARSE)
+       *    Sprite pre-renderizado en canvas offscreen + Pool reciclable.
+       * ===================================================================== */
+      const canvas = document.getElementById('angel-canvas');
+      const ctx = canvas.getContext('2d', { alpha: true });
+
+      let width = window.innerWidth;
+      let height = window.innerHeight;
+
+      function resizeCanvas() {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+        canvas.width = Math.floor(width * dpr);
+        canvas.height = Math.floor(height * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+      resizeCanvas();
+      window.addEventListener('resize', resizeCanvas, { passive: true });
+
+      // Pre-renderizado de la pluma blanca nacarada en un canvas offscreen
+      const featherSprite = document.createElement('canvas');
+      featherSprite.width = 64;
+      featherSprite.height = 64;
+      const fCtx = featherSprite.getContext('2d');
+
+      (function renderFeatherSprite() {
+        fCtx.clearRect(0, 0, 64, 64);
+        fCtx.save();
+        fCtx.translate(32, 32);
+        fCtx.shadowColor = 'rgba(148, 163, 184, 0.5)';
+        fCtx.shadowBlur = 7;
+
+        // Silueta delicada de pluma
+        fCtx.beginPath();
+        fCtx.moveTo(0, -24);
+        fCtx.bezierCurveTo(12, -12, 10, 9, 0, 22);
+        fCtx.bezierCurveTo(-10, 9, -12, -12, 0, -24);
+
+        const grad = fCtx.createLinearGradient(-10, -24, 10, 24);
+        grad.addColorStop(0, '#ffffff');
+        grad.addColorStop(0.65, '#f8fafc');
+        grad.addColorStop(1, 'rgba(226, 232, 240, 0.88)');
+        fCtx.fillStyle = grad;
+        fCtx.fill();
+
+        // Tallo central nacarado
+        fCtx.beginPath();
+        fCtx.moveTo(0, -21);
+        fCtx.quadraticCurveTo(1.4, 0, 0, 26);
+        fCtx.strokeStyle = '#e2e8f0';
+        fCtx.lineWidth = 1.2;
+        fCtx.stroke();
+
+        fCtx.restore();
+      })();
+
+      // Plumas flotando muy lentamente en el aire (speedY entre 0.18 y 0.40 px/frame)
+      const FEATHER_COUNT = width < 640 ? 15 : 26;
+      const feathers = [];
+
+      for (let i = 0; i < FEATHER_COUNT; i++) {
+        feathers.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          size: 16 + Math.random() * 19,
+          speedY: 0.18 + Math.random() * 0.22, // 0.18 a 0.40 px por frame (caída super suave)
+          swayAmp: 0.22 + Math.random() * 0.36, // Balanceo horizontal delicado
+          swayFreq: 0.004 + Math.random() * 0.006,
+          phase: Math.random() * Math.PI * 2,
+          baseAngle: (Math.random() - 0.5) * 0.65,
+          alpha: 0.55 + Math.random() * 0.38
+        });
+      }
+
+      // Pool fijo de partículas para la estela del mouse (cero uso extra de memoria)
+      const TRAIL_POOL_SIZE = 38;
+      const trailPool = [];
+      let trailIdx = 0;
+
+      for (let i = 0; i < TRAIL_POOL_SIZE; i++) {
+        trailPool.push({
+          active: false,
+          x: 0,
+          y: 0,
+          vx: 0,
+          vy: 0,
+          size: 3,
+          life: 0,
+          maxLife: 40,
+          isMiniFeather: false,
+          rot: 0
+        });
+      }
+
+      function spawnTrail(x, y, vx, vy, isMiniFeather) {
+        const p = trailPool[trailIdx];
+        trailIdx = (trailIdx + 1) % TRAIL_POOL_SIZE;
+        p.active = true;
+        p.x = x;
+        p.y = y;
+        p.vx = vx;
+        p.vy = vy;
+        p.size = isMiniFeather ? 13 + Math.random() * 6 : 2.4 + Math.random() * 3;
+        p.life = 0;
+        p.maxLife = isMiniFeather ? 65 : 36;
+        p.isMiniFeather = isMiniFeather;
+        p.rot = Math.random() * Math.PI * 2;
+      }
+
+      function spawnBurst(x, y, count) {
+        for (let i = 0; i < count; i++) {
+          const angle = (Math.PI * 2 * i) / count + Math.random() * 0.35;
+          const speed = 0.7 + Math.random() * 1.4;
+          spawnTrail(
+            x,
+            y,
+            Math.cos(angle) * speed,
+            Math.sin(angle) * speed - 0.3,
+            i % 2 === 0
+          );
+        }
+      }
+
+      let lastX = -999;
+      let lastY = -999;
+      let moveStep = 0;
+
+      window.addEventListener('pointermove', (e) => {
+        const dx = e.clientX - lastX;
+        const dy = e.clientY - lastY;
+        if (dx * dx + dy * dy > 190) {
+          moveStep++;
+          spawnTrail(
+            e.clientX + (Math.random() - 0.5) * 8,
+            e.clientY + (Math.random() - 0.5) * 8,
+            (Math.random() - 0.5) * 0.38,
+            0.16 + Math.random() * 0.28, // Las mini-plumas del mouse también caen lento
+            moveStep % 5 === 0
+          );
+          lastX = e.clientX;
+          lastY = e.clientY;
+        }
+      }, { passive: true });
+
+      window.addEventListener('pointerdown', (e) => {
+        spawnBurst(e.clientX, e.clientY, 6);
+      }, { passive: true });
+
+      let isVisible = !document.hidden;
+      document.addEventListener('visibilitychange', () => {
+        isVisible = !document.hidden;
+        if (isVisible) requestAnimationFrame(animate);
+      });
+
+      function animate() {
+        if (!isVisible) return;
+
+        // Actualizar inclinación 3D suave de la tarjeta
+        if (isFinePointer && card) {
+          currentRotX += (targetRotX - currentRotX) * 0.09;
+          currentRotY += (targetRotY - currentRotY) * 0.09;
+
+          if (isHoveringCard || Math.abs(currentRotX) > 0.01 || Math.abs(currentRotY) > 0.01) {
+            card.style.transform = `rotateX(${currentRotX.toFixed(2)}deg) rotateY(${currentRotY.toFixed(2)}deg)`;
+          } else if (card.style.transform !== '') {
+            card.style.transform = '';
+          }
+        }
+
+        ctx.clearRect(0, 0, width, height);
+
+        // Dibujar plumas ambientales lentas
+        for (let i = 0; i < FEATHER_COUNT; i++) {
+          const f = feathers[i];
+          f.phase += f.swayFreq;
+          f.y += f.speedY;
+          f.x += Math.sin(f.phase) * f.swayAmp;
+
+          if (f.y > height + 32) {
+            f.y = -32;
+            f.x = Math.random() * width;
+          }
+          if (f.x > width + 32) f.x = -28;
+          else if (f.x < -32) f.x = width + 28;
+
+          ctx.save();
+          ctx.globalAlpha = f.alpha;
+          ctx.translate(f.x, f.y);
+          ctx.rotate(f.baseAngle + Math.sin(f.phase) * 0.36);
+          ctx.drawImage(featherSprite, -f.size * 0.5, -f.size * 0.5, f.size, f.size);
+          ctx.restore();
+        }
+
+        // Dibujar destellos y mini-plumas de la estela del mouse
+        for (let i = 0; i < TRAIL_POOL_SIZE; i++) {
+          const p = trailPool[i];
+          if (!p.active) continue;
+
+          p.life++;
+          if (p.life >= p.maxLife) {
+            p.active = false;
+            continue;
+          }
+
+          p.x += p.vx;
+          p.y += p.vy;
+          p.rot += 0.018;
+
+          const progress = p.life / p.maxLife;
+          const alpha = 1 - progress;
+
+          ctx.save();
+          ctx.globalAlpha = alpha * 0.9;
+          ctx.translate(p.x, p.y);
+
+          if (p.isMiniFeather) {
+            ctx.rotate(p.rot);
+            ctx.drawImage(featherSprite, -p.size * 0.5, -p.size * 0.5, p.size, p.size);
+          } else {
+            const s = p.size * (1 - progress * 0.35);
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.moveTo(0, -s * 1.8);
+            ctx.quadraticCurveTo(0, 0, s * 1.8, 0);
+            ctx.quadraticCurveTo(0, 0, 0, s * 1.8);
+            ctx.quadraticCurveTo(0, 0, -s * 1.8, 0);
+            ctx.quadraticCurveTo(0, 0, 0, -s * 1.8);
+            ctx.fill();
+          }
+
+          ctx.restore();
+        }
+
+        requestAnimationFrame(animate);
+      }
+
+      requestAnimationFrame(animate);
+    });
+  </script>
+</body>
+</html>
